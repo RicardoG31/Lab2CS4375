@@ -7,7 +7,7 @@ Use command funciton
 	type /bin/<command>
 	Ex. $ /bin/ls
 Use instance of bash within shell
-	type /bin/shell
+	type /bin/bash
 	Inside of bash type "exit" to go back to shell 
 Exit shell
 	hold ctrl+d
