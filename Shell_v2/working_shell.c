@@ -5,32 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-//Handle built in commands
-int builtInCmdHandler(char** cmd) {
-	int NoOfOwnCmds = 1, i, switchOwnArg = 0; 
-    char* ListOfOwnCmds[NoOfOwnCmds]; 
-  
-    ListOfOwnCmds[0] = "exit"; 
-    for (i = 0; i < NoOfOwnCmds; i++) { 
-        if (strcmp(cmd[0], ListOfOwnCmds[i]) == 0) { 
-            switchOwnArg = i + 1; 
-            break; 
-        } 
-    } 
-    
-    switch (switchOwnArg) { 
-		case 1: 
-		    printf("Closing Shell...\n"); 
-		    exit(0); 
-		default: 
-        	break; 
-    } 
-  
-    return 0; 
-        
-    
-}
-
 
 int main(int argc, char **argv, char *envp[]) {
 	//Process id
@@ -57,31 +31,32 @@ int main(int argc, char **argv, char *envp[]) {
           token = strtok(NULL, " \t\n\r");
         }
         command[i] = NULL;
-		//FIXME
-		//Check if command is a built-in command
-		if(execvp(command[0], command) < 0) {
-			//execute built in commands (use a method)
-			printf("If you used ls, you should not be here\n");
-			builtInCmdHandler(command);
+		
+		int builtInCommand = 0;
+		cpid = fork();
+		//Fork fails
+		if(cpid < 0) {
+			fprintf(stderr, "fork failed\n");
+        	exit(1);
 		}
-		//FIXME
-		else {
-			cpid = fork();
-			//Fork fails
-			if(cpid < 0) {
-				fprintf(stderr, "fork failed\n");
-        		exit(1);
-			}
-			//Run child process
-			else if(cpid == 0) {
-				if (execve(command[0], command, envp)) {
-		          printf("command not found\n");
-		          exit(EXIT_FAILURE);
-          		}
-			}
-			//Run parent process
-			else if(cpid > 0) {
-				wait(&status);
+		//Run child process
+		else if(cpid == 0) {
+			builtInCommand = builtInCmdHandler(command);
+			
+			if (execve(command[0], command, envp)) {
+	        	if(builtInCommand > 0) {
+	        		exit(0);
+	        	}
+	        	printf("command not found: %s\n", command[0]);	          		 			exit(EXIT_FAILURE);
+        	}
+        	
+		}
+		//Run parent process
+		else if(cpid > 0) {
+			wait(&status);
+			//builtInCommand = builtInCmdHandler(command);
+			if(strcmp(command[0], "exit") == 0) {
+				exit(0);
 			}
 			
 		}
@@ -105,69 +80,13 @@ void openHelp()
         "\n>exit"
         "\n>all other general commands available in UNIX shell"
         "\n>pipe handling"
-        "\n>improper space handling"); 
+        "\n>improper space handling\n"); 
   
     return; 
 } 
 
-// Function where the piped system commands is executed 
-void execArgsPiped(char** parsed, char** parsedpipe) 
-{ 
-    // 0 is read end, 1 is write end 
-    int pipefd[2];  
-    pid_t p1, p2; 
-  
-    if (pipe(pipefd) < 0) { 
-        printf("\nPipe could not be initialized"); 
-        return; 
-    } 
-    p1 = fork(); 
-    if (p1 < 0) { 
-        printf("\nCould not fork"); 
-        return; 
-    } 
-  
-    if (p1 == 0) { 
-        // Child 1 executing.. 
-        // It only needs to write at the write end 
-        close(pipefd[0]); 
-        dup2(pipefd[1], STDOUT_FILENO); 
-        close(pipefd[1]); 
-  
-        if (execvp(parsed[0], parsed) < 0) { 
-            printf("\nCould not execute command 1.."); 
-            exit(0); 
-        } 
-    } else { 
-        // Parent executing 
-        p2 = fork(); 
-  
-        if (p2 < 0) { 
-            printf("\nCould not fork"); 
-            return; 
-        } 
-  
-        // Child 2 executing.. 
-        // It only needs to read at the read end 
-        if (p2 == 0) { 
-            close(pipefd[1]); 
-            dup2(pipefd[0], STDIN_FILENO); 
-            close(pipefd[0]); 
-            if (execvp(parsedpipe[0], parsedpipe) < 0) { 
-                printf("\nCould not execute command 2.."); 
-                exit(0); 
-            } 
-        } else { 
-            // parent executing, waiting for two children 
-            wait(NULL); 
-            wait(NULL); 
-        } 
-    } 
-} 
-
-
 // Function to execute builtin commands 
-int ownCmdHandler(char** parsed) 
+int builtInCmdHandler(char** parsed) 
 { 
     int NoOfOwnCmds = 4, i, switchOwnArg = 0; 
     char* ListOfOwnCmds[NoOfOwnCmds]; 
@@ -187,8 +106,8 @@ int ownCmdHandler(char** parsed)
   
     switch (switchOwnArg) { 
     case 1: 
-        printf("\nGoodbye\n"); 
-        exit(0); 
+        printf("Closing shell..\n"); 
+        return 1; 
     case 2: 
         chdir(parsed[1]); 
         return 1; 
@@ -208,23 +127,5 @@ int ownCmdHandler(char** parsed)
   
     return 0; 
 } 
-
-// function for finding pipe 
-int parsePipe(char* str, char** strpiped) 
-{ 
-    int i; 
-    for (i = 0; i < 2; i++) { 
-        strpiped[i] = strsep(&str, "|"); 
-        if (strpiped[i] == NULL) 
-            break; 
-    } 
-  
-    if (strpiped[1] == NULL) 
-        return 0; // returns zero if no pipe is found. 
-    else { 
-        return 1; 
-    } 
-} 
-
 
 
