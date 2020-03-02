@@ -41,6 +41,7 @@ int main(int argc, char **argv, char *envp[]) {
 		}
 		//Run child process
 		else if(cpid == 0) {
+			execvp(command[0], command);
 			builtInCommand = builtInCmdHandler(command);
 			
 			if (execve(command[0], command, envp)) {
@@ -59,6 +60,7 @@ int main(int argc, char **argv, char *envp[]) {
 				exit(0);
 			}
 			
+			
 		}
 		
 	}
@@ -71,31 +73,18 @@ int main(int argc, char **argv, char *envp[]) {
 	return 0;
 }
 
-// Help command builtin 
-void openHelp() 
-{ 
-    puts("\nList of Commands supported:"
-        "\n>cd"
-        "\n>ls"
-        "\n>exit"
-        "\n>all other general commands available in UNIX shell"
-        "\n>pipe handling"
-        "\n>improper space handling\n"); 
-  
-    return; 
-} 
+
 
 // Function to execute builtin commands 
 int builtInCmdHandler(char** parsed) 
 { 
-    int NoOfOwnCmds = 4, i, switchOwnArg = 0; 
+    int NoOfOwnCmds = 2, i, switchOwnArg = 0; 
     char* ListOfOwnCmds[NoOfOwnCmds]; 
     char* username; 
   
     ListOfOwnCmds[0] = "exit"; 
     ListOfOwnCmds[1] = "cd"; 
-    ListOfOwnCmds[2] = "help"; 
-    ListOfOwnCmds[3] = "hello"; 
+     
   
     for (i = 0; i < NoOfOwnCmds; i++) { 
         if (strcmp(parsed[0], ListOfOwnCmds[i]) == 0) { 
@@ -110,17 +99,7 @@ int builtInCmdHandler(char** parsed)
         return 1; 
     case 2: 
         chdir(parsed[1]); 
-        return 1; 
-    case 3: 
-        openHelp(); 
-        return 1; 
-    case 4: 
-        username = getenv("USER"); 
-        printf("\nHello %s.\nMind that this is "
-            "not a place to play around."
-            "\nUse help to know more..\n", 
-            username); 
-        return 1; 
+        return 1;  
     default: 
         break; 
     } 
